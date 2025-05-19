@@ -1,0 +1,26 @@
+{
+  "name": "connect-mssql-v3",
+  "version": "0.0.0",
+  "description": "MS SQL Server session store for Express Session",
+  "main": "dist/src/store.js",
+  "types": "dist/src/store.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist"
+  },
+  "keywords": [
+    "sql",
+    "express",
+    "session",
+    "store",
+    "mssql"
+  ],
+  "author": "bradtaniguchi@gmail.com",
+  "license": "MIT",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3"
+  }
+}
