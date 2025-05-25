@@ -1,0 +1,41 @@
+name: on-push
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+        node-version: [18.x, 20.x, 24.x]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm ci
+      - run: npm run build
+      - run: npm run lint
+      # - name: Install a SQL Server suite of tools
+      #   uses: potatoqualitee/mssqlsuite@v1.8
+      #   with:
+      #     install: sqlengine
+      # - name: Seed session table
+      #   run: |
+      #     sqlcmd -S localhost -U sa -P dbatools.I0 -d tempdb -Q "CREATE TABLE [dbo].[sessions](
+      #         [sid] [nvarchar](255) NOT NULL PRIMARY KEY,
+      #         [session] [nvarchar](max) NOT NULL,
+      #         [expires] [datetime] NOT NULL
+      #     )"
+      # - run: npm run test
+      #   env:
+      #     SQLUSER: sa
+      #     SQLPASSWORD: dbatools.I0
+      #     SQLSERVER: localhost
+      #     SQLDATABASE: tempdb
