@@ -20,6 +20,7 @@ export class MSSQLStore extends ExpressSessionStore {
    * The connection pool used to connect to the MSSQL database.
    */
   public databaseConnection: ConnectionPool;
+
   constructor(config: SQLConfig, options?: Partial<MSSQLStoreOptions>) {
     super();
     this.options = options || MSSQL_DEFAULT_STORE_OPTIONS;
