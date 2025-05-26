@@ -1,0 +1,50 @@
+{
+  "name": "Connect MSSQL v3 Dev Container",
+  "dockerComposeFile": "docker-compose.yaml",
+  "service": "app", // Service in docker-compose.yaml for VS Code to connect to
+  "workspaceFolder": "/workspace", // Workspace folder inside the container
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker",
+        "ms-mssql.mssql" // SQL Server (mssql) extension by Microsoft
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "typescript.tsdk": "/workspace/node_modules/typescript/lib",
+        // Pre-configure the mssql extension to connect to the dev database
+        "mssql.connections": [
+          {
+            "server": "db", // This is the service name from docker-compose.yaml
+            "database": "TestSessionDB",
+            "authenticationType": "SqlLogin",
+            "user": "sa",
+            "password": "YourStrong(!)Password123", // IMPORTANT: Change this!
+            "savePassword": true, // For convenience in dev; consider security implications
+            "profileName": "DevContainer DB", // Connection name in VS Code
+            "trustServerCertificate": true // Important for self-signed certs in dev containers
+          }
+        ],
+        "eslint.validate": ["javascript", "typescript"],
+        "editor.formatOnSave": true,
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+      }
+    }
+  },
+  "features": {
+    // Adds mssql-tools (which includes sqlcmd) to the 'app' container
+    "ghcr.io/devcontainers/features/mssql-tools:1": {}
+  },
+  // Runs once after the container is created
+  "postCreateCommand": "npm install && npm run build",
+  // Runs every time the container starts or you attach to it
+  "postAttachCommand": {
+    "1_createDatabase": "sqlcmd -S db -U sa -P YourStrong(!)Password123 -d master -Q \"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'TestSessionDB') CREATE DATABASE TestSessionDB; ELSE PRINT 'Database TestSessionDB already exists.';\"",
+    "2_createSessionsTable": "sqlcmd -S db -U sa -P YourStrong(!)Password123 -d TestSessionDB -Q \"IF OBJECT_ID('dbo.sessions', 'U') IS NULL CREATE TABLE dbo.sessions (sid nvarchar(255) NOT NULL PRIMARY KEY, session nvarchar(max) NOT NULL, expires datetime NOT NULL); ELSE PRINT 'Table dbo.sessions already exists.';\""
+  },
+  "remoteUser": "node" // Use the non-root 'node' user provided by the base image
+}

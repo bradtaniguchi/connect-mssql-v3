@@ -1,0 +1,48 @@
+version: "3.8"
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/typescript-node:0-20 # Node.js 20
+    volumes:
+      - ..:/workspace:cached # Mount project root (connect-mssql-v3) to /workspace
+    working_dir: /workspace
+    command: sleep infinity # Keeps the container running
+    depends_on:
+      db:
+        condition: service_healthy # Wait for DB to be healthy
+    environment:
+      SQL_USER: sa
+      SQL_PASSWORD: YourStrong(!)Password123 # IMPORTANT: Change this!
+      SQL_SERVER: db # 'db' is the service name of the SQL Server container
+      SQL_DATABASE: TestSessionDB # Database name for the app and tests
+      # NODE_ENV: development # Optional: if your app uses it
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest # SQL Server 2022
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: YourStrong(!)Password123 # IMPORTANT: Change this! Must match SQL_PASSWORD above
+      MSSQL_PID: "Developer" # Developer Edition is free and has more features
+    ports:
+      - "1433:1433" # Maps host port 1433 to container port 1433
+    volumes:
+      - mssql_data:/var/opt/mssql # Persists SQL Server data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/opt/mssql-tools/bin/sqlcmd",
+          "-S",
+          "localhost",
+          "-U",
+          "sa",
+          "-P",
+          "YourStrong(!)Password123",
+          "-Q",
+          "SELECT 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mssql_data: # Defines the named volume for SQL Server data persistence
