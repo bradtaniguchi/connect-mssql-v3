@@ -2,8 +2,6 @@
 title: Examples
 ---
 
-# Examples
-
 Below is a basic example of usage with express-session + connect-mssql-v2:
 
 <!-- TODO: this is V2 as a starting point, but will use V3 shortly. -->
