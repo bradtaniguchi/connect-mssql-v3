@@ -6,7 +6,9 @@
   "types": "dist/src/store.d.ts",
   "scripts": {
     "build": "tsc",
+    "dev": "tsc --watch",
     "build:docs": "typedoc",
+    "dev:docs": "typedoc --watch",
     "serve:docs": "http-server typedoc",
     "clean": "rimraf dist typedoc",
     "lint": "eslint --ext src/**/*.ts"
