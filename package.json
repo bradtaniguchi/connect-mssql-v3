@@ -6,9 +6,16 @@
   "types": "dist/src/store.d.ts",
   "scripts": {
     "build": "tsc",
-    "clean": "rimraf dist",
-    "lint": "npx eslint --ext src/**/*.ts"
+    "build:docs": "typedoc",
+    "serve:docs": "http-server typedoc",
+    "clean": "rimraf dist typedoc",
+    "lint": "eslint --ext src/**/*.ts"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "keywords": [
     "sql",
     "express",
@@ -20,14 +27,21 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.27.0",
+    "@types/express-session": "^1.18.1",
     "@types/jest": "^29.5.14",
+    "@types/mssql": "^9.1.7",
     "eslint": "^9.27.0",
+    "http-server": "^14.1.1",
     "husky": "^9.1.7",
     "jest": "^29.7.0",
     "rimraf": "^6.0.1",
-    "typescript": "^5.8.3"
-  },
-  "dependencies": {
+    "typedoc": "^0.28.4",
+    "typedoc-plugin-markdown": "^4.6.3",
+    "typescript": "^5.8.3",
     "typescript-eslint": "^8.32.1"
+  },
+  "peerDependencies": {
+    "express-session": "^1.18.1",
+    "mssql": "^11.0.1"
   }
 }
