@@ -27,22 +27,24 @@ services:
     volumes:
       - mssql_data:/var/opt/mssql # Persists SQL Server data
     healthcheck:
-      test:
-        [
+      test: [
           "CMD",
-          "/opt/mssql-tools/bin/sqlcmd",
+          # "/opt/mssql-tools/bin/sqlcmd",
+          "/opt/mssql-tools18/bin/sqlcmd",
+          "-C", # Skip certificate validation (not recommended for production)
           "-S",
           "localhost",
           "-U",
           "sa",
           "-P",
-          "YourStrong(!)Password123",
+          "'YourStrong(!)Password123'",
           "-Q",
-          "SELECT 1",
+          "'SELECT 1'",
         ]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
+      start_period: 30s # Allow SQL Server time to initialize before checks begin
 
 volumes:
   mssql_data: # Defines the named volume for SQL Server data persistence

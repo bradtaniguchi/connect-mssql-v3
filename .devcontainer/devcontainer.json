@@ -37,10 +37,10 @@
   },
   "features": {
     // Adds mssql-tools (which includes sqlcmd) to the 'app' container
-    "ghcr.io/devcontainers/features/mssql-tools:1": {}
+    // "ghcr.io/devcontainers/features/mssql-tools:1": {}
   },
   // Runs once after the container is created
-  "postCreateCommand": "npm install && npm run build",
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y curl unzip && curl -sSL https://github.com/microsoft/go-sqlcmd/releases/latest/download/sqlcmd-linux-amd64.zip -o sqlcmd.zip && unzip sqlcmd.zip sqlcmd.exe && sudo mv sqlcmd.exe /usr/local/bin/sqlcmd && sudo chmod +x /usr/local/bin/sqlcmd && rm sqlcmd.zip && npm install && npm run build",
   // Runs every time the container starts or you attach to it
   "postAttachCommand": {
     "1_createDatabase": "sqlcmd -S db -U sa -P YourStrong(!)Password123 -d master -Q \"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'TestSessionDB') CREATE DATABASE TestSessionDB; ELSE PRINT 'Database TestSessionDB already exists.';\"",
