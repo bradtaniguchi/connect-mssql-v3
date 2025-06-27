@@ -11,7 +11,7 @@
     "dev:docs": "typedoc --watch",
     "serve:docs": "http-server typedoc",
     "clean": "rimraf dist typedoc",
-    "lint": "eslint --ext src/**/*.ts"
+    "lint": "eslint --config eslint.config.mjs src/**/*.ts"
   },
   "files": [
     "dist",
