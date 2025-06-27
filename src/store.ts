@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Store as ExpressSessionStore, SessionData } from "express-session";
 import { ConnectionPool, config as SQLConfig } from "mssql";
 import { MSSQL_DEFAULT_STORE_OPTIONS } from "./default-options";
@@ -27,17 +26,20 @@ export class MSSQLStore extends ExpressSessionStore {
     this.config = config;
     this.databaseConnection = new ConnectionPool(config);
   }
-  // **note** no comments here to allow for the parent class to handle the comments
-  public async set(
-    sid: string,
-    session: SessionData,
-    callback?: (err?: unknown) => void
-  ) {
-    throw new Error("Method not implemented.");
-  }
-  // **note** no comments here to allow for the parent class to handle the comments
-  public async destroy(sid: string, callback?: (err?: unknown) => void) {
-    throw new Error("Method not implemented.");
+
+  /**
+   * Calculate the expiration date for a session based on the cookie configuration
+   * and the store's TTL setting.
+   */
+  private getExpirationDate(sessionCookie: { expires?: Date | null }): Date {
+    const ttl = this.options.ttl || 1000 * 60 * 60 * 24; // 24 hours default
+
+    // If expires is explicitly set to a Date, use it; otherwise use TTL
+    if (sessionCookie.expires instanceof Date) {
+      return sessionCookie.expires;
+    }
+
+    return new Date(Date.now() + ttl);
   }
 
   /**
@@ -54,7 +56,19 @@ export class MSSQLStore extends ExpressSessionStore {
   }
 
   private async initializeDatabase() {
-    throw new Error("initializeDatabase method not implemented");
+    // Attach event listeners
+    this.databaseConnection.on("connect", () => this.emit("connect", this));
+    this.databaseConnection.on("error", (error) => this.emit("error", error));
+
+    // Connect to the database
+    await this.databaseConnection.connect();
+    this.databaseConnection.emit("connect");
+
+    // Set up auto-removal if enabled
+    if (this.options.autoRemove) {
+      const interval = this.options.autoRemoveInterval || 1000 * 60 * 10; // 10 minutes default
+      setInterval(() => this.destroyExpired(), interval);
+    }
   }
 
   /**
@@ -174,6 +188,114 @@ export class MSSQLStore extends ExpressSessionStore {
       return session;
     } catch (err) {
       this.errorHandler("get", err);
+
+      if (callback) {
+        callback(err);
+        return;
+      }
+
+      throw err;
+    }
+  }
+  public async set(
+    sid: string,
+    session: SessionData,
+    callback?: (err?: unknown) => void
+  ): Promise<void> {
+    try {
+      const expires = this.getExpirationDate(session.cookie);
+
+      await this.queryRunner({
+        inputParameters: {
+          sid,
+          session: JSON.stringify(session),
+          expires,
+        },
+        queryStatement: `UPDATE ${this.options.table}
+                           SET session = @session, expires = @expires
+                           WHERE sid = @sid;
+                           IF @@ROWCOUNT = 0
+                            BEGIN
+                              INSERT INTO ${this.options.table} (sid, session, expires)
+                                VALUES (@sid, @session, @expires)
+                            END;`,
+        expectReturn: false,
+      });
+
+      if (typeof callback === "function") {
+        callback();
+      }
+    } catch (err) {
+      this.errorHandler("set", err);
+
+      if (typeof callback === "function") {
+        callback(err);
+        return;
+      }
+
+      throw err;
+    }
+  }
+  public async destroy(
+    sid: string,
+    callback?: (err?: unknown) => void
+  ): Promise<void> {
+    try {
+      await this.queryRunner({
+        inputParameters: { sid },
+        queryStatement: `DELETE FROM ${this.options.table} WHERE sid = @sid`,
+        expectReturn: false,
+      });
+
+      if (callback) {
+        callback();
+      }
+    } catch (err) {
+      this.errorHandler("destroy", err);
+
+      if (callback) {
+        callback(err);
+        return;
+      }
+
+      throw err;
+    }
+  }
+  /**
+   * Destroy expired sessions from the store.
+   */
+  public async destroyExpired(
+    callback?: (err?: unknown) => void
+  ): Promise<void> {
+    try {
+      if (this.options.preRemoveCallback) {
+        const preRemoveResult = this.options.preRemoveCallback();
+        if (preRemoveResult instanceof Promise) {
+          await preRemoveResult;
+        }
+      }
+
+      const useUTC = this.options.useUTC !== false; // default to true
+      const dateFunction = useUTC ? "GETUTCDATE" : "GETDATE";
+
+      await this.queryRunner({
+        queryStatement: `DELETE FROM ${this.options.table} WHERE expires <= ${dateFunction}()`,
+        expectReturn: false,
+      });
+
+      if (this.options.autoRemoveCallback) {
+        this.options.autoRemoveCallback(null);
+      }
+
+      if (callback) {
+        callback();
+      }
+    } catch (err) {
+      this.errorHandler("destroyExpired", err);
+
+      if (this.options.autoRemoveCallback) {
+        this.options.autoRemoveCallback(err);
+      }
 
       if (callback) {
         callback(err);
