@@ -27,14 +27,6 @@ export class MSSQLStore extends ExpressSessionStore {
     this.config = config;
     this.databaseConnection = new ConnectionPool(config);
   }
-
-  // **note** no comments here to allow for the parent class to handle the comments
-  public async get(
-    sid: string,
-    callback: (err: unknown, session?: SessionData | null) => void
-  ) {
-    throw new Error("Method not implemented.");
-  }
   // **note** no comments here to allow for the parent class to handle the comments
   public async set(
     sid: string,
@@ -152,6 +144,41 @@ export class MSSQLStore extends ExpressSessionStore {
       }, {} as Record<string, SessionData>);
     } catch (err) {
       this.errorHandler("all", err);
+
+      throw err;
+    }
+  }
+  public async get(sid: string): Promise<SessionData | null>;
+  public async get(
+    sid: string,
+    callback: (err: unknown, session?: SessionData | null) => void
+  ): Promise<void>;
+  public async get(
+    sid: string,
+    callback?: (err: unknown, session?: SessionData | null) => void
+  ): Promise<SessionData | null | void> {
+    try {
+      const results = await this.queryRunner<{ session: SessionData }>({
+        queryStatement: `SELECT session FROM ${this.options.table} WHERE sid = @sid`,
+        expectReturn: true,
+        inputParameters: { sid },
+      });
+
+      const session = results && results.length > 0 ? results[0].session : null;
+
+      if (callback) {
+        callback(null, session);
+        return;
+      }
+
+      return session;
+    } catch (err) {
+      this.errorHandler("get", err);
+
+      if (callback) {
+        callback(err);
+        return;
+      }
 
       throw err;
     }
